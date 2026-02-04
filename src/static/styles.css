@@ -211,8 +211,23 @@ footer {
   white-space: nowrap;
 }
 
+.remove-btn {
+  background: transparent;
+  border: none;
+  color: #c62828;
+  font-weight: 700;
+  margin-left: 6px;
+  cursor: pointer;
+  padding: 0 6px;
+  border-radius: 50%;
+}
+
+.remove-btn:hover {
+  background: rgba(198, 40, 40, 0.08);
+}
+
 /* small helper */
 .participants-empty {
   color: #666;
   font-size: 13px;
-}
+} 

@@ -15,6 +15,54 @@ document.addEventListener("DOMContentLoaded", () => {
     return initials.toUpperCase();
   }
 
+  // Crea un elemento de lista para un participante con el botón "X" y su manejador
+  function createParticipantListItem(activityName, email, elems) {
+    const li = document.createElement("li");
+    li.className = "participant";
+    li.innerHTML = `<span class="avatar">${initialsFromEmail(email)}</span><span class="participant-email" title="${email}">${email}</span><button class="remove-btn" aria-label="Remove ${email}">✕</button>`;
+    const removeBtn = li.querySelector(".remove-btn");
+    removeBtn.addEventListener("click", async (event) => {
+      event.preventDefault();
+      if (!confirm(`Eliminar a ${email} de "${activityName}"?`)) return;
+      try {
+        const response = await fetch(
+          `/activities/${encodeURIComponent(activityName)}/signup?email=${encodeURIComponent(email)}`,
+          { method: "DELETE" }
+        );
+        const result = await response.json();
+        if (response.ok) {
+          // Quitar elemento del DOM
+          li.remove();
+          // Actualizar contador de plazas y mensaje vacío
+          const elemsRef = elems || activityElements.get(activityName);
+          if (elemsRef) {
+            const current = parseInt(elemsRef.spotsEl.textContent, 10);
+            if (!isNaN(current)) {
+              elemsRef.spotsEl.textContent = current + 1;
+            }
+            // Si ya no hay items, mostrar "Sin participantes"
+            if (elemsRef.participantsListEl.children.length === 0) {
+              elemsRef.participantsEmptyEl.classList.remove("hidden");
+            }
+          }
+          messageDiv.textContent = result.message;
+          messageDiv.className = "success";
+        } else {
+          messageDiv.textContent = result.detail || "Error eliminando participante";
+          messageDiv.className = "error";
+        }
+        messageDiv.classList.remove("hidden");
+        setTimeout(() => messageDiv.classList.add("hidden"), 5000);
+      } catch (error) {
+        messageDiv.textContent = "Failed to remove participant. Please try again.";
+        messageDiv.className = "error";
+        messageDiv.classList.remove("hidden");
+        console.error("Error removing participant:", error);
+      }
+    });
+    return li;
+  }
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
@@ -62,9 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           participantsEmptyEl.classList.add("hidden");
           details.participants.forEach((email) => {
-            const li = document.createElement("li");
-            li.className = "participant";
-            li.innerHTML = `<span class="avatar">${initialsFromEmail(email)}</span><span class="participant-email" title="${email}">${email}</span>`;
+            const li = createParticipantListItem(name, email, { participantsListEl, participantsEmptyEl, spotsEl });
             participantsListEl.appendChild(li);
           });
         }
@@ -109,9 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const elems = activityElements.get(activity);
         if (elems) {
           // añadir participante visualmente
-          const li = document.createElement("li");
-          li.className = "participant";
-          li.innerHTML = `<span class="avatar">${initialsFromEmail(email)}</span><span class="participant-email" title="${email}">${email}</span>`;
+          const li = createParticipantListItem(activity, email, elems);
           elems.participantsListEl.appendChild(li);
 
           // ocultar mensaje "Sin participantes" si estaba visible
